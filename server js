@@ -1,0 +1,32 @@
+const express = require("express");
+const cors = require("cors");
+const Stripe = require("stripe");
+
+const app = express();
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+
+app.use(cors());
+app.use(express.json());
+
+app.post("/create-checkout-session", async (req, res) => {
+  const line_items = req.body.items.map((item) => ({
+    price_data: {
+      currency: "eur",
+      product_data: { name: item.name },
+      unit_amount: item.price,
+    },
+    quantity: 1,
+  }));
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    mode: "payment",
+    line_items,
+    success_url: "https://jouw-vercel-site.vercel.app/success",
+    cancel_url: "https://jouw-vercel-site.vercel.app",
+  });
+
+  res.json({ url: session.url });
+});
+
+app.listen(4242, () => console.log("✅ Stripe backend draait op poort 4242"));
